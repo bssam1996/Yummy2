@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "245149410158",
+    "project_id": "yummy2-recipes",
+    "storage_bucket": "yummy2-recipes.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:245149410158:android:e516c1888abfe33774d77f",
+        "android_client_info": {
+          "package_name": "com.bplusplus.yummy2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "245149410158-j2unagn2fcigkj8f64j59pd4k8mof1na.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bplusplus.yummy2",
+            "certificate_hash": "0882b685401a129124975381cc0a44a1c83f9572"
+          }
+        },
+        {
+          "client_id": "245149410158-uful4s3jt0l5ir7479u927cu2o9r1th5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_LfZI_r6jEee-SN6zmL_Zy82jCqtd3Ig"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "245149410158-uful4s3jt0l5ir7479u927cu2o9r1th5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
