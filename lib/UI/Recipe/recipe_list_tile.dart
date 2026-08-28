@@ -1,33 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:yummy2/shared/constants.dart';
 import '/UI/Recipe/recipe_user_details.dart';
 import '/UI/Recipe/view_recipe.dart';
 import '/models/user.dart';
 
 import '../../models/recipe.dart';
 import 'add_edit_recipe.dart';
+
 class RecipeListTileClass extends StatelessWidget {
-  final int index;
   final CustomUser? customUser;
   final Recipe recipe;
   final bool editable;
-  const RecipeListTileClass({Key? key, required this.index, this.customUser, required this.recipe,required this.editable}) : super(key: key);
+  const RecipeListTileClass({
+    Key? key,
+    this.customUser,
+    required this.recipe,
+    required this.editable,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 5,
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: lightPink,
-          child: Text("${index+1}"),
-        ),
         title: Container(
           child: Column(
             children: [
-              Text(recipe.title,
-                style: TextStyle(fontWeight: FontWeight.bold,fontSize: 24),),
+              Text(
+                recipe.title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+              ),
               Divider(),
               Text(recipe.type),
             ],
@@ -39,29 +41,41 @@ class RecipeListTileClass extends StatelessWidget {
               Text(recipe.description),
               Visibility(
                 visible: recipe.parentId != "",
-                  child: RecipeUserDetailsClass(parentId: recipe.parentId,whatToReturn: "Name")
-              )
+                child: RecipeUserDetailsClass(
+                  parentId: recipe.parentId,
+                  whatToReturn: "Name",
+                ),
+              ),
               //Divider(),
             ],
           ),
         ),
-        onLongPress: (){
-          if(editable) {
-            Navigator.push(context, PageTransition(
+        onLongPress: () {
+          if (editable) {
+            Navigator.push(
+              context,
+              PageTransition(
                 curve: Curves.linear,
                 alignment: Alignment.topCenter,
                 type: PageTransitionType.scale,
                 child: AddEditRecipe(
-                  method: "Edit", customUser: customUser, recipe: recipe,))
+                  method: "Edit",
+                  customUser: customUser,
+                  recipe: recipe,
+                ),
+              ),
             );
           }
         },
-        onTap: (){
-          Navigator.push(context, PageTransition(
+        onTap: () {
+          Navigator.push(
+            context,
+            PageTransition(
               curve: Curves.linear,
               alignment: Alignment.topCenter,
               type: PageTransitionType.scale,
-              child: ViewRecipeClass(customUser: customUser,recipe: recipe,))
+              child: ViewRecipeClass(customUser: customUser, recipe: recipe),
+            ),
           );
         },
       ),

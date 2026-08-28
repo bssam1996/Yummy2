@@ -4,64 +4,102 @@ import '/UI/Recipe/recipe_list_tile.dart';
 import '/models/user.dart';
 import '/models/recipe.dart';
 import '../../shared/loading.dart';
+
 class ListOfRecipesClass extends StatefulWidget {
   final CustomUser? customUser;
-  const ListOfRecipesClass({Key? key, required this.customUser}) : super(key: key);
+  const ListOfRecipesClass({Key? key, required this.customUser})
+    : super(key: key);
 
   @override
   State<ListOfRecipesClass> createState() => _ListOfRecipesClassState();
 }
 
 class _ListOfRecipesClassState extends State<ListOfRecipesClass> {
-
   final firestoreInstance = FirebaseFirestore.instance;
   TextEditingController searchController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
-    List<Recipe> recipes;
     return StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('Users').doc(widget.customUser?.uid).collection("recipes").orderBy("Created",descending: true).snapshots(),
-        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (!snapshot.hasData) return Loading();
-          recipes = [];
-          if(snapshot.data != null){
-            int snapshotLength = snapshot.data?.docs.length??0;
-            for(int snapIndex = 0; snapIndex < snapshotLength; snapIndex++){
-              Recipe recipe = Recipe(
-                id: snapshot.data?.docs.elementAt(snapIndex).id??"",
-                parentId: snapshot.data?.docs.elementAt(snapIndex).reference.parent.parent?.id??"",
-                sharing: (snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Sharing"]?.toString()??"",
-                created: (snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Created"].toDate(),
-                type:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Type"]?.toString()??"",
-                title:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Title"]?.toString()??"",
-                description:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Description"]?.toString()??"",
-                ingredients:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Ingredients"]?.toString()??"",
-                directions:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Directions"]?.toString()??"",
-                numberOfMinutes:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["NumberOfMinutes"]??0,
-                ovenTemp:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["OvenTemp"]??0,
-                servings:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Servings"]??0,
-                notes:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["Notes"]?.toString()??"",
-                videos:(snapshot.data?.docs.elementAt(snapIndex).data() as Map)["videos"]??[],
-              );
-              recipes.add(recipe);
-            }
-          }
-          return ListView.builder(
-              shrinkWrap:true,
-              itemCount:recipes.length,
-              itemBuilder: (BuildContext context,int index){
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      RecipeListTileClass(customUser: widget.customUser,recipe: recipes[index],index: index,editable: true,)
-                    ],
-                  ),
-                );
-              }
+      stream: firestoreInstance
+          .collection('Users')
+          .doc(widget.customUser?.uid)
+          .collection("recipes")
+          .snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (!snapshot.hasData) return Loading();
+
+        final recipes = <Recipe>[];
+        for (final document in snapshot.data!.docs) {
+          final data = document.data() as Map;
+          recipes.add(
+            Recipe(
+              id: document.id,
+              parentId: document.reference.parent.parent?.id ?? "",
+              sharing: data["Sharing"]?.toString() ?? "",
+              created: data["Created"].toDate(),
+              type: data["Type"]?.toString() ?? "",
+              title: data["Title"]?.toString() ?? "",
+              description: data["Description"]?.toString() ?? "",
+              ingredients: data["Ingredients"]?.toString() ?? "",
+              directions: data["Directions"]?.toString() ?? "",
+              numberOfMinutes: data["NumberOfMinutes"] ?? 0,
+              ovenTemp: data["OvenTemp"] ?? 0,
+              servings: data["Servings"] ?? 0,
+              notes: data["Notes"]?.toString() ?? "",
+              videos: data["videos"] ?? [],
+            ),
           );
         }
+
+        if (recipes.isEmpty) {
+          return const Center(child: Text('No recipes yet.'));
+        }
+
+        final recipesByType = <String, List<Recipe>>{};
+        for (final recipe in recipes) {
+          final type = recipe.type.trim().isEmpty
+              ? 'Uncategorised'
+              : recipe.type.trim();
+          recipesByType.putIfAbsent(type, () => []).add(recipe);
+        }
+
+        final types = recipesByType.keys.toList()
+          ..sort(
+            (first, second) =>
+                first.toLowerCase().compareTo(second.toLowerCase()),
+          );
+        for (final recipesInType in recipesByType.values) {
+          recipesInType.sort(
+            (first, second) =>
+                first.title.toLowerCase().compareTo(second.title.toLowerCase()),
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(8, 16, 8, 88),
+          children: [
+            for (final type in types) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                child: Text(
+                  type,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              for (var index = 0; index < recipesByType[type]!.length; index++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: RecipeListTileClass(
+                    customUser: widget.customUser,
+                    recipe: recipesByType[type]![index],
+                    editable: true,
+                  ),
+                ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
