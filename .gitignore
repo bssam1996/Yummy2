@@ -53,3 +53,4 @@ Password.txt
 client_secret_*.json
 .env
 .env.*
+android/app/google-services-bk.json

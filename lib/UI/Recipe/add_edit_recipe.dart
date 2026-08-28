@@ -116,82 +116,95 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
       child: Scaffold(
         backgroundColor: lightBlue,
         appBar: AppBar(
-          backgroundColor: darkBlue,
           title: Text(
-            (widget.method == "Create" ? "New " : "Edit ") + "Recipe",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            widget.method == "Create" ? "Create recipe" : "Edit recipe",
           ),
         ),
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Recipe's info",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: darkPurpleColor,
+                  widget.method == "Create"
+                      ? "What are you making?"
+                      : "Update your recipe",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 26,
+                    color: darkBlue,
                   ),
                 ),
-                Divider(),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: IconButton(
-                        icon: FaIcon(
-                          FontAwesomeIcons.networkWired,
-                          color: Colors.black,
-                          size: 20,
+                const SizedBox(height: 6),
+                const Text(
+                  'Add the details that make this recipe easy to cook again.',
+                  style: TextStyle(color: Color(0xFF64748B), height: 1.4),
+                ),
+                const SizedBox(height: 22),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFF0E1D5)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: IconButton(
+                          icon: FaIcon(
+                            FontAwesomeIcons.networkWired,
+                            color: Colors.black,
+                            size: 20,
+                          ),
+                          onPressed: () {},
                         ),
-                        onPressed: () {},
                       ),
-                    ),
-                    Expanded(
-                      flex: 9,
-                      child: DropdownButton<String>(
-                        value: selectedType.isNotEmpty
-                            ? selectedType
-                            : "Private",
-                        iconSize: 24,
-                        elevation: 16,
-                        isExpanded: true,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          color: Colors.blueAccent,
+                      Expanded(
+                        flex: 9,
+                        child: DropdownButton<String>(
+                          value: selectedType.isNotEmpty
+                              ? selectedType
+                              : "Private",
+                          iconSize: 24,
+                          elevation: 16,
+                          isExpanded: true,
+                          style: const TextStyle(fontSize: 20, color: darkBlue),
+                          alignment: Alignment.center,
+                          underline: Container(
+                            height: 2,
+                            color: const Color(0xFFF0E1D5),
+                          ),
+                          menuMaxHeight: 100,
+                          onChanged: widget.customUser == null
+                              ? null
+                              : (String? newValue) {
+                                  setState(() {
+                                    if (newValue != null) {
+                                      selectedType = newValue.toString();
+                                    }
+                                    ;
+                                  });
+                                },
+                          items:
+                              [
+                                if (widget.customUser != null) "Public",
+                                "Private",
+                              ].map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Center(child: Text(value)),
+                                );
+                              }).toList(),
                         ),
-                        alignment: Alignment.center,
-                        underline: Container(
-                          height: 2,
-                          color: Colors.blueAccent,
-                        ),
-                        menuMaxHeight: 100,
-                        onChanged: widget.customUser == null
-                            ? null
-                            : (String? newValue) {
-                                setState(() {
-                                  if (newValue != null) {
-                                    selectedType = newValue.toString();
-                                  }
-                                  ;
-                                });
-                              },
-                        items:
-                            [
-                              if (widget.customUser != null) "Public",
-                              "Private",
-                            ].map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Center(child: Text(value)),
-                              );
-                            }).toList(),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (widget.customUser == null)
                   const Padding(
@@ -201,7 +214,7 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
                       style: TextStyle(color: Colors.black54),
                     ),
                   ),
-                Divider(),
+                const SizedBox(height: 16),
                 TextFormField(
                   textCapitalization: TextCapitalization.words,
                   textAlign: TextAlign.center,
@@ -439,6 +452,7 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
                 ),
                 Divider(height: 20),
                 RoundedLoadingButton(
+                  color: darkBlue,
                   child: Text(
                     "Save",
                     style: TextStyle(
@@ -456,7 +470,7 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
                 Visibility(
                   visible: widget.method == "Edit",
                   child: RoundedLoadingButton(
-                    color: Color(0xffee7373),
+                    color: darkPink,
                     child: Text(
                       "Delete",
                       style: TextStyle(

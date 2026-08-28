@@ -4,6 +4,7 @@ import '/UI/Recipe/recipe_list_tile.dart';
 import '/models/user.dart';
 import '/models/recipe.dart';
 import '../../shared/loading.dart';
+import '../../shared/constants.dart';
 
 class ListOfRecipesClass extends StatefulWidget {
   final CustomUser? customUser;
@@ -82,9 +83,32 @@ class _ListOfRecipesClassState extends State<ListOfRecipesClass> {
             for (final type in types) ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-                child: Text(
-                  type,
-                  style: Theme.of(context).textTheme.headlineSmall,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: darkBlue,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.restaurant_menu_rounded,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        type,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               for (var index = 0; index < recipesByType[type]!.length; index++)
@@ -94,6 +118,7 @@ class _ListOfRecipesClassState extends State<ListOfRecipesClass> {
                     customUser: widget.customUser,
                     recipe: recipesByType[type]![index],
                     editable: true,
+                    showType: false,
                   ),
                 ),
             ],

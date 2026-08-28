@@ -16,6 +16,12 @@ class ViewPublicRecipesClass extends StatefulWidget {
   State<ViewPublicRecipesClass> createState() => _ViewPublicRecipesClassState();
 }
 
+class _PublicRecipesData {
+  const _PublicRecipesData({required this.recipes});
+
+  final List<Recipe> recipes;
+}
+
 class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
   final firestoreInstance = FirebaseFirestore.instance;
 
@@ -34,22 +40,28 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
           ],
         ),
         backgroundColor: lightBlue,
-        body: StreamBuilder<QuerySnapshot>(
+        body: StreamBuilder<_PublicRecipesData>(
           stream: firestoreInstance
               .collectionGroup("recipes")
               .where("Sharing", isEqualTo: "Public")
               .orderBy("Created", descending: true)
-              .snapshots(),
+              .snapshots()
+              .asyncMap(_namedPublicRecipes),
           builder:
-              (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+              (
+                BuildContext context,
+                AsyncSnapshot<_PublicRecipesData> snapshot,
+              ) {
                 if (snapshot.hasError) {
                   return _errorState(snapshot.error);
                 }
                 if (!snapshot.hasData) return Loading();
 
-                final recipes = _recipesFromSnapshot(snapshot.data!);
+                final recipes = snapshot.data!.recipes;
                 if (recipes.isEmpty) {
-                  return const Center(child: Text('No public recipes yet.'));
+                  return const Center(
+                    child: Text('No public recipes from named profiles yet.'),
+                  );
                 }
 
                 final recipesByType = <String, List<Recipe>>{};
@@ -79,9 +91,32 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
                     for (final type in types) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-                        child: Text(
-                          type,
-                          style: Theme.of(context).textTheme.headlineSmall,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: darkBlue,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.public_rounded,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                type,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       for (final recipe in recipesByType[type]!)
@@ -91,6 +126,7 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
                             customUser: widget.customUser,
                             recipe: recipe,
                             editable: false,
+                            showType: false,
                           ),
                         ),
                     ],
@@ -115,11 +151,17 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
       final authorNames = await _loadAuthorNames(recipes);
       if (!mounted) return;
 
+      final namedRecipes = recipes
+          .where(
+            (recipe) => (authorNames[recipe.parentId] ?? '').trim().isNotEmpty,
+          )
+          .toList();
+
       showSearch(
         context: context,
         delegate: SearchRecipesClass(
           customUser: widget.customUser,
-          listExample: recipes,
+          listExample: namedRecipes,
           editable: false,
           authorNames: authorNames,
         ),
@@ -164,6 +206,18 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
       }),
     );
     return Map<String, String>.fromEntries(authorEntries);
+  }
+
+  Future<_PublicRecipesData> _namedPublicRecipes(QuerySnapshot snapshot) async {
+    final recipes = _recipesFromSnapshot(snapshot);
+    final authorNames = await _loadAuthorNames(recipes);
+    return _PublicRecipesData(
+      recipes: recipes
+          .where(
+            (recipe) => (authorNames[recipe.parentId] ?? '').trim().isNotEmpty,
+          )
+          .toList(),
+    );
   }
 
   List<Recipe> _recipesFromSnapshot(QuerySnapshot snapshot) {
