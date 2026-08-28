@@ -12,4 +12,21 @@ void main() {
   test('does not interpret a joined number as an ingredient quantity', () {
     expect(multiplyText('1salt', 0.5), '0.5 1salt');
   });
+
+  test('multiplies compact units regardless of their casing', () {
+    expect(
+      multiplyText('16g salt\n100mL water\n2tbsp olive oil\n100mlWater', 0.5),
+      '8g salt\n50mL water\n1tbsp olive oil\n50mlWater',
+    );
+  });
+
+  test('supports fractions, ranges, list prefixes, and written quantities', () {
+    expect(
+      multiplyText(
+        '1/2 cup milk\n1 1/2cups flour\n1-2 kg potatoes\n- one clove garlic\n\u00BDcup cream',
+        0.5,
+      ),
+      '0.25 cup milk\n0.75cups flour\n0.5-1 kg potatoes\n- 0.5 clove garlic\n0.25cup cream',
+    );
+  });
 }

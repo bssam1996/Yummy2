@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:rounded_loading_button/rounded_loading_button.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:yummy2/shared/constants.dart';
 
@@ -48,6 +49,18 @@ class _ViewRecipeClassState extends State<ViewRecipeClass> {
         appBar: AppBar(
           title: const Text('Recipe'),
           actions: [
+            Builder(
+              builder: (shareButtonContext) => IconButton(
+                tooltip: 'Share recipe',
+                onPressed: () => _shareRecipe(shareButtonContext),
+                icon: Image.asset(
+                  'assets/icons/share.png',
+                  width: 23,
+                  height: 23,
+                  color: Colors.white,
+                ),
+              ),
+            ),
             if (_canManageRecipe || widget.recipe.ingredients.trim().isNotEmpty)
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_horiz_rounded),
@@ -371,6 +384,53 @@ class _ViewRecipeClassState extends State<ViewRecipeClass> {
         snack().displaySnackBar('Could not open this video.', Colors.red),
       );
     }
+  }
+
+  Future<void> _shareRecipe(BuildContext shareButtonContext) async {
+    final shareBox = shareButtonContext.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(
+      ShareParams(
+        title: widget.recipe.title,
+        subject: 'Recipe: ${widget.recipe.title}',
+        text: _recipeShareText(),
+        sharePositionOrigin: shareBox == null
+            ? null
+            : shareBox.localToGlobal(Offset.zero) & shareBox.size,
+      ),
+    );
+  }
+
+  String _recipeShareText() {
+    final sections = <String>[
+      '🍽️ ${widget.recipe.title}',
+      if (widget.recipe.type.trim().isNotEmpty) 'Type: ${widget.recipe.type}',
+      if (widget.recipe.description.trim().isNotEmpty)
+        widget.recipe.description,
+      if (widget.recipe.numberOfMinutes > 0)
+        'Cooking time: ${widget.recipe.numberOfMinutes} minutes',
+      if (widget.recipe.ovenTemp > 0)
+        'Oven temperature: ${widget.recipe.ovenTemp}°',
+      if (widget.recipe.servings > 0) 'Servings: ${widget.recipe.servings}',
+      if (widget.recipe.ingredients.trim().isNotEmpty)
+        'INGREDIENTS\n${widget.recipe.ingredients}',
+      if (widget.recipe.directions.trim().isNotEmpty)
+        'DIRECTIONS\n${widget.recipe.directions}',
+      if (widget.recipe.notes.trim().isNotEmpty)
+        'NOTES\n${widget.recipe.notes}',
+      if (widget.recipe.videos?.isNotEmpty ?? false)
+        'VIDEOS\n${_videoShareText()}',
+    ];
+    return sections.join('\n\n');
+  }
+
+  String _videoShareText() {
+    return widget.recipe.videos!
+        .map((video) {
+          final description = video['description']?.toString().trim() ?? '';
+          final link = video['link']?.toString() ?? '';
+          return description.isEmpty ? link : '$description: $link';
+        })
+        .join('\n');
   }
 
   Future<void> _handleOptionsClick(String value) async {
