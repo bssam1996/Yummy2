@@ -11,6 +11,7 @@ import 'package:yummy2/shared/constants.dart';
 import '../../shared/snack.dart';
 
 const _maximumWordsPerRecipeField = 1000;
+const _maximumTagsPerRecipe = 10;
 
 class _WordLimitTextInputFormatter extends TextInputFormatter {
   const _WordLimitTextInputFormatter(this.maximumWords);
@@ -67,7 +68,11 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
   TextEditingController notesController = TextEditingController();
   TextEditingController videoLinkController = TextEditingController();
   TextEditingController videoDescriptionController = TextEditingController();
+  TextEditingController tagController = TextEditingController();
   List videos = [];
+  List<String> tags = [];
+  List<String> _tagSuggestions = [];
+  List<String> _categorySuggestions = [];
   final RoundedLoadingButtonController _createController =
       RoundedLoadingButtonController();
   RoundedLoadingButtonController _deleteController =
@@ -88,10 +93,15 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
       servingsNumController.text = widget.recipe?.servings.toString() ?? "";
       notesController.text = widget.recipe?.notes ?? "";
       videos = widget.recipe?.videos ?? [];
+      tags = _normaliseTags(
+        widget.recipe?.tags ?? const [],
+        maximum: _maximumTagsPerRecipe,
+      );
       selectedType = widget.customUser == null
           ? "Private"
           : widget.recipe?.sharing ?? "Private";
     }
+    _loadRecipeSuggestions();
   }
 
   @override
@@ -107,6 +117,7 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
     notesController.dispose();
     videoLinkController.dispose();
     videoDescriptionController.dispose();
+    tagController.dispose();
     super.dispose();
   }
 
@@ -215,22 +226,7 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  textCapitalization: TextCapitalization.words,
-                  textAlign: TextAlign.center,
-                  decoration: const InputDecoration(
-                    border: UnderlineInputBorder(),
-                    filled: true,
-                    icon: FaIcon(
-                      FontAwesomeIcons.hamburger,
-                      color: Colors.black,
-                      size: 23,
-                    ),
-                    hintText: "e.g Dessert",
-                    labelText: "*Recipe's Type",
-                  ),
-                  controller: typeController,
-                ),
+                _buildCategoryField(),
                 Divider(),
                 TextFormField(
                   textCapitalization: TextCapitalization.words,
@@ -331,6 +327,8 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
                   labelText: "Notes",
                 ),
                 Divider(),
+                _buildTagsField(),
+                const Divider(),
                 // Videos Links
                 Row(
                   children: [
@@ -545,7 +543,278 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
 
   int _wordCount(String text) => RegExp(r'\S+').allMatches(text).length;
 
-  void _handlesubmit() {
+  Widget _buildCategoryField() {
+    final searchTerm = typeController.text.trim().toLowerCase();
+    final suggestions = _categorySuggestions
+        .where(
+          (category) =>
+              searchTerm.isEmpty || category.toLowerCase().contains(searchTerm),
+        )
+        .take(30)
+        .toList();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 14),
+          child: FaIcon(FontAwesomeIcons.burger, color: Colors.black, size: 23),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: typeController,
+                textCapitalization: TextCapitalization.words,
+                textAlign: TextAlign.center,
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp(r'[,;]')),
+                ],
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  border: UnderlineInputBorder(),
+                  filled: true,
+                  hintText: 'e.g Dessert',
+                  labelText: '*Recipe category',
+                  helperText:
+                      'Choose a previous category below or type a new one. One category per recipe.',
+                ),
+              ),
+              if (suggestions.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Previously used categories',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: suggestions
+                      .map(
+                        (category) => ActionChip(
+                          label: Text(category),
+                          onPressed: () {
+                            setState(() {
+                              typeController.text = category;
+                              typeController.selection =
+                                  TextSelection.collapsed(
+                                    offset: category.length,
+                                  );
+                            });
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTagsField() {
+    final availableSuggestions = _tagSuggestions
+        .where(
+          (tag) =>
+              !tags.any(
+                (selectedTag) => selectedTag.toLowerCase() == tag.toLowerCase(),
+              ) &&
+              (tagController.text.trim().isEmpty ||
+                  tag.toLowerCase().contains(
+                    tagController.text.trim().toLowerCase(),
+                  )),
+        )
+        .toList();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 14),
+          child: FaIcon(FontAwesomeIcons.tags, color: Colors.black, size: 22),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: tagController,
+                enabled: tags.length < _maximumTagsPerRecipe,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.done,
+                onChanged: (_) => setState(() {}),
+                onFieldSubmitted: _addTags,
+                decoration: InputDecoration(
+                  border: const UnderlineInputBorder(),
+                  filled: true,
+                  hintText: 'e.g Quick, Vegetarian',
+                  labelText: 'Tags (${tags.length}/$_maximumTagsPerRecipe)',
+                  helperText:
+                      'Add up to $_maximumTagsPerRecipe tags. Separate multiple tags with commas.',
+                  suffixIcon: IconButton(
+                    tooltip: 'Add tag',
+                    onPressed: tags.length < _maximumTagsPerRecipe
+                        ? () => _addTags(tagController.text)
+                        : null,
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                  ),
+                ),
+              ),
+              if (tags.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: tags
+                      .map(
+                        (tag) => InputChip(
+                          label: Text('#$tag'),
+                          onDeleted: () {
+                            setState(() => tags.remove(tag));
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+              if (availableSuggestions.isNotEmpty &&
+                  tags.length < _maximumTagsPerRecipe) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Previously used tags',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: availableSuggestions
+                      .take(30)
+                      .map(
+                        (tag) => ActionChip(
+                          label: Text('#$tag'),
+                          onPressed: () => _addTags(tag),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _loadRecipeSuggestions() async {
+    final userId = widget.customUser?.uid;
+    if (userId == null) return;
+
+    try {
+      final snapshot = await firestoreInstance
+          .collection('Users')
+          .doc(userId)
+          .collection('recipes')
+          .get();
+      final previousTags = <dynamic>[];
+      final previousCategories = <dynamic>[];
+      for (final document in snapshot.docs) {
+        final data = document.data() as Map;
+        final tags = data['Tags'];
+        if (tags is Iterable) previousTags.addAll(tags);
+        previousCategories.add(data['Type'] ?? '');
+      }
+      if (!mounted) return;
+      setState(() {
+        _tagSuggestions = _normaliseTags(previousTags);
+        _tagSuggestions.sort(
+          (first, second) =>
+              first.toLowerCase().compareTo(second.toLowerCase()),
+        );
+        _categorySuggestions = _normaliseCategories(previousCategories);
+        _categorySuggestions.sort(
+          (first, second) =>
+              first.toLowerCase().compareTo(second.toLowerCase()),
+        );
+      });
+    } catch (_) {
+      // Suggestions are a convenience; manually entering a category or tag
+      // must still work when older recipes cannot be loaded.
+    }
+  }
+
+  List<String> _normaliseTags(Iterable<dynamic> rawTags, {int? maximum}) {
+    final result = <String>[];
+    final seen = <String>{};
+    for (final rawTag in rawTags) {
+      final tag = rawTag
+          .toString()
+          .trim()
+          .replaceFirst(RegExp(r'^#+'), '')
+          .replaceAll(RegExp(r'\s+'), ' ');
+      final key = tag.toLowerCase();
+      if (tag.isNotEmpty && seen.add(key)) result.add(tag);
+      if (maximum != null && result.length == maximum) break;
+    }
+    return result;
+  }
+
+  List<String> _normaliseCategories(Iterable<dynamic> rawCategories) {
+    final result = <String>[];
+    final seen = <String>{};
+    for (final rawCategory in rawCategories) {
+      final category = _normaliseCategory(rawCategory.toString());
+      final key = category.toLowerCase();
+      if (category.isNotEmpty && seen.add(key)) result.add(category);
+    }
+    return result;
+  }
+
+  String _normaliseCategory(String value) =>
+      value.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  void _addTags(String input) {
+    final newTags = _normaliseTags(input.split(','));
+    if (newTags.isEmpty) return;
+
+    var limitReached = false;
+    setState(() {
+      for (final tag in newTags) {
+        final isDuplicate = tags.any(
+          (selectedTag) => selectedTag.toLowerCase() == tag.toLowerCase(),
+        );
+        if (isDuplicate) continue;
+        if (tags.length == _maximumTagsPerRecipe) {
+          limitReached = true;
+          break;
+        }
+        tags.add(tag);
+      }
+      tagController.clear();
+    });
+    if (limitReached && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        snack().displaySnackBar(
+          'A recipe can have up to $_maximumTagsPerRecipe tags.',
+          Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handlesubmit() async {
     try {
       if (selectedType == "Public" && widget.customUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -557,10 +826,11 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
         _createController.stop();
         return;
       }
-      if (typeController.text.isEmpty || typeController.text == "") {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(snack().displaySnackBar("Type is missing", Colors.red));
+      final category = _normaliseCategory(typeController.text);
+      if (category.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          snack().displaySnackBar("Recipe category is missing", Colors.red),
+        );
         _createController.stop();
         return;
       }
@@ -572,7 +842,7 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
         return;
       }
       if (widget.method == "Create") {
-        firestoreInstance
+        await firestoreInstance
             .collection("Users")
             .doc(widget.customUser?.uid)
             .collection("recipes")
@@ -580,7 +850,7 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
               // "Code":int.parse(CodeController.text),
               "Created": DateTime.now(),
               "Sharing": selectedType,
-              "Type": typeController.text,
+              "Type": category,
               "Title": titleController.text,
               "Description": descriptionController.text,
               "Ingredients": ingredientsController.text,
@@ -590,17 +860,19 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
               "Servings": int.tryParse(servingsNumController.text),
               "Notes": notesController.text,
               "videos": videos,
+              "Tags": tags,
             });
+        if (!mounted) return;
         _createController.stop();
         Navigator.pop(context);
       } else {
-        firestoreInstance
+        await firestoreInstance
             .collection("Users")
             .doc(widget.customUser?.uid)
             .collection("recipes")
             .doc(widget.recipe?.id)
             .set({
-              "Type": typeController.text,
+              "Type": category,
               "Sharing": selectedType,
               "Title": titleController.text,
               "Description": descriptionController.text,
@@ -611,13 +883,16 @@ class _AddEditRecipeState extends State<AddEditRecipe> {
               "Servings": int.tryParse(servingsNumController.text),
               "Notes": notesController.text,
               "videos": videos,
+              "Tags": tags,
             }, SetOptions(merge: true));
+        if (!mounted) return;
         _createController.stop();
         ScaffoldMessenger.of(context).showSnackBar(
           snack().displaySnackBar("Saved successfully", Colors.green),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(snack().displaySnackBar(e.toString()));

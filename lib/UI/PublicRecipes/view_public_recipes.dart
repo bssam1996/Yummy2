@@ -64,21 +64,22 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
                   );
                 }
 
-                final recipesByType = <String, List<Recipe>>{};
+                final recipesByCategory = <String, List<Recipe>>{};
+                final categoryLabels = <String, String>{};
                 for (final recipe in recipes) {
-                  final type = recipe.type.trim().isEmpty
+                  final categoryLabel = recipe.type.trim().isEmpty
                       ? 'Uncategorised'
                       : recipe.type.trim();
-                  recipesByType.putIfAbsent(type, () => []).add(recipe);
+                  final categoryKey = categoryLabel.toLowerCase();
+                  recipesByCategory
+                      .putIfAbsent(categoryKey, () => [])
+                      .add(recipe);
+                  categoryLabels.putIfAbsent(categoryKey, () => categoryLabel);
                 }
 
-                final types = recipesByType.keys.toList()
-                  ..sort(
-                    (first, second) =>
-                        first.toLowerCase().compareTo(second.toLowerCase()),
-                  );
-                for (final recipesInType in recipesByType.values) {
-                  recipesInType.sort(
+                final categoryKeys = recipesByCategory.keys.toList()..sort();
+                for (final recipesInCategory in recipesByCategory.values) {
+                  recipesInCategory.sort(
                     (first, second) => first.title.toLowerCase().compareTo(
                       second.title.toLowerCase(),
                     ),
@@ -88,47 +89,67 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
                   children: [
-                    for (final type in types) ...[
+                    for (final categoryKey in categoryKeys) ...[
                       Padding(
                         padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
                           decoration: BoxDecoration(
                             color: darkBlue,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.public_rounded,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                type,
-                                style: const TextStyle(
+                          child: ExpansionTile(
+                            key: PageStorageKey(
+                              'public-recipes-category-$categoryKey',
+                            ),
+                            initiallyExpanded: true,
+                            iconColor: Colors.white,
+                            collapsedIconColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              side: BorderSide.none,
+                            ),
+                            collapsedShape: const RoundedRectangleBorder(
+                              side: BorderSide.none,
+                            ),
+                            tilePadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            title: Row(
+                              children: [
+                                const Icon(
+                                  Icons.public_rounded,
                                   color: Colors.white,
-                                  fontSize: 19,
-                                  fontWeight: FontWeight.w800,
                                 ),
-                              ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  categoryLabels[categoryKey]!,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            children: [
+                              for (final recipe
+                                  in recipesByCategory[categoryKey]!)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 4,
+                                  ),
+                                  child: RecipeListTileClass(
+                                    customUser: widget.customUser,
+                                    recipe: recipe,
+                                    editable: false,
+                                    showType: false,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
                       ),
-                      for (final recipe in recipesByType[type]!)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: RecipeListTileClass(
-                            customUser: widget.customUser,
-                            recipe: recipe,
-                            editable: false,
-                            showType: false,
-                          ),
-                        ),
                     ],
                   ],
                 );
@@ -241,6 +262,7 @@ class _ViewPublicRecipesClassState extends State<ViewPublicRecipesClass> {
         servings: data["Servings"] ?? 0,
         notes: data["Notes"]?.toString() ?? "",
         videos: data["videos"] ?? [],
+        tags: Recipe.tagsFrom(data["Tags"]),
       );
     }).toList();
   }

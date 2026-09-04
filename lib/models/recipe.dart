@@ -1,4 +1,3 @@
-
 class Recipe {
   String id;
   String parentId;
@@ -14,6 +13,7 @@ class Recipe {
   int servings;
   String notes;
   List<dynamic>? videos;
+  List<String> tags;
   Recipe({
     required this.id,
     this.parentId = "",
@@ -28,5 +28,22 @@ class Recipe {
     this.ovenTemp = 0,
     this.servings = 0,
     this.notes = "",
-    this.videos = const []});
+    this.videos = const [],
+    this.tags = const [],
+  });
+
+  /// Safely reads tags from older recipes (which have no Tags field) as well
+  /// as current recipe documents.
+  static List<String> tagsFrom(dynamic value) {
+    if (value is! Iterable) return const [];
+
+    final seen = <String>{};
+    final tags = <String>[];
+    for (final entry in value) {
+      final tag = entry.toString().trim();
+      final key = tag.toLowerCase();
+      if (tag.isNotEmpty && seen.add(key)) tags.add(tag);
+    }
+    return tags;
+  }
 }

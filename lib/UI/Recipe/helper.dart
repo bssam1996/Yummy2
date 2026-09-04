@@ -48,7 +48,7 @@ final _quantityAtStart = RegExp(
 // Units commonly attached directly to a quantity: 100ml, 16g, 2tbsp,
 // 1 1/2cups, 400G and camel-cased values such as 100mLWater.
 final _attachedUnit = RegExp(
-  r'^(?:tablespoons?|tbsp\.?|teaspoons?|tsp\.?|kilograms?|kgs?|grams?|gr|g|milligrams?|mgs?|millilit(?:er|re)s?|mls?|centilit(?:er|re)s?|cls?|decilit(?:er|re)s?|dls?|lit(?:er|re)s?|l|lbs?|pounds?|ounces?|oz|fluid\s*ounces?|fl\.?\s*oz|cups?|cans?|packets?|sachets?|slices?|cloves?|pieces?|sticks?|bunches?|heads?|leaves|leaf|sprigs?|pinches?|dashes?|drops?|inches?|inch|cms?|mms?|x|\u00D7)',
+  r'^(?:tablespoons?|tbsp\.?|teaspoons?|tsp\.?|kilograms?|kgs?|grams?|gr|g|gm|milligrams?|mgs?|millilit(?:er|re)s?|mls?|centilit(?:er|re)s?|cls?|decilit(?:er|re)s?|dls?|lit(?:er|re)s?|l|lbs?|pounds?|ounces?|oz|fluid\s*ounces?|fl\.?\s*oz|cups?|cans?|packets?|sachets?|slices?|cloves?|pieces?|sticks?|bunches?|heads?|leaves|leaf|sprigs?|pinches?|dashes?|drops?|inches?|inch|cms?|mms?|x|\u00D7)',
   caseSensitive: false,
 );
 

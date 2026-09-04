@@ -53,6 +53,9 @@ class SearchRecipesClass extends SearchDelegate {
                 (recipe) =>
                     recipe.type.toUpperCase().contains(searchTerm) ||
                     recipe.title.toUpperCase().contains(searchTerm) ||
+                    recipe.tags.any(
+                      (tag) => tag.toUpperCase().contains(searchTerm),
+                    ) ||
                     (authorNames[recipe.parentId] ?? '').toUpperCase().contains(
                       searchTerm,
                     ),

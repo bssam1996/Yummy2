@@ -78,6 +78,36 @@ class RecipeListTileClass extends StatelessWidget {
                     height: 1.35,
                   ),
                 ),
+              if (recipe.tags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: recipe.tags
+                        .map(
+                          (tag) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE4F0F0),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '#$tag',
+                              style: const TextStyle(
+                                color: Color(0xFF264653),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
               if (recipe.parentId.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),

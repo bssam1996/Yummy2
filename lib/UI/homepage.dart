@@ -262,6 +262,10 @@ class _HomePageClassState extends State<HomePageClass> {
                                 (snapshot.docs.elementAt(snapIndex).data()
                                     as Map)["videos"] ??
                                 [],
+                            tags: Recipe.tagsFrom(
+                              (snapshot.docs.elementAt(snapIndex).data()
+                                  as Map)["Tags"],
+                            ),
                           );
                           recipes.add(recipe);
                         }
